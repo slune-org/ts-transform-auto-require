@@ -15,11 +15,11 @@
     "prepublishOnly": "npm run all",
     "all": "npm run clean && npm run test && npm run build",
     "test": "npm run test:lint && npm run test:dep && npm run test:unit",
-    "test:lint": "eslint 'src/**/*.ts'",
+    "test:lint": "eslint --config .eslintrc.full.yaml 'src/**/*.ts'",
     "test:dep": "depcheck",
     "test:unit": "nyc mocha 'src/**/*.spec.ts'",
-    "build": "npm run build:project",
-    "build:project": "tsc",
+    "build": "npm run build:main",
+    "build:main": "tsc",
     "clean": "rimraf dist"
   },
   "keywords": [
@@ -35,6 +35,10 @@
     "type": "git",
     "url": "https://github.com/slune-org/ts-transform-auto-require.git"
   },
+  "dependencies": {
+    "glob": "7.1.6",
+    "simple-ts-transform": "1.0.0"
+  },
   "peerDependencies": {
     "typescript": "^3.0.0"
   },
@@ -44,13 +48,13 @@
     "@types/glob": "7.1.1",
     "@types/mocha": "7.0.1",
     "@types/node": "13.7.0",
-    "@typescript-eslint/eslint-plugin": "2.18.0",
-    "@typescript-eslint/parser": "2.18.0",
+    "@typescript-eslint/eslint-plugin": "2.19.0",
+    "@typescript-eslint/parser": "2.19.0",
     "chai": "4.2.0",
     "depcheck": "0.9.2",
     "eslint": "6.8.0",
     "eslint-config-prettier": "6.10.0",
-    "eslint-plugin-import": "2.20.0",
+    "eslint-plugin-import": "2.20.1",
     "eslint-plugin-jsdoc": "21.0.0",
     "eslint-plugin-node": "11.0.0",
     "eslint-plugin-prettier": "3.1.2",
@@ -60,9 +64,7 @@
     "rimraf": "3.0.1",
     "source-map-support": "0.5.16",
     "ts-node": "8.6.2",
+    "ts-transform-test-compiler": "1.0.0",
     "typescript": "3.7.5"
-  },
-  "dependencies": {
-    "glob": "7.1.6"
   }
 }

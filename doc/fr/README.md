@@ -22,7 +22,7 @@ const allThemes: { [name: string]: Theme } = {}
 Object.entries(allThemes).forEach(([name, theme]) => createTheme(name, theme))
 ```
 
-le transformateur va remplir la variable `allLocales` afin que le fichier devienne :
+le transformateur va remplir la variable `allThemes` afin que le fichier devienne :
 
 ```typescript
 // locales/index.ts
@@ -72,8 +72,9 @@ En utilisant le transformateur, vous n'aurez pas besoin de faire cela. Écrivez 
 
 Le transformateur contient sa configuration sous le paramètre `autoRequires`, qui est un tableau d'objets contenant :
 
-- `glob`: le patron [glob](https://www.npmjs.com/package/glob) utilisé pour sélectionner les fichiers, relatif à la racine du projet — ce paramètre est requis ;
-- `ignore`: une chaine de caractères ou un tableau de chaines de caractères pour les fichiers à ignorer — la valeur est transmise directement à l'option `ignore` de [glob](https://www.npmjs.com/package/glob) — ce paramètre est optionel ;
+- `source`: la définition de la source, les fichiers à requérir — c'est un objet obligatoire contenant :
+  - `glob`: le patron [glob](https://www.npmjs.com/package/glob) utilisé pour sélectionner les fichiers, relatif à la racine du projet — ce paramètre est requis ;
+  - `ignore`: une chaine de caractères ou un tableau de chaines de caractères pour les fichiers à ignorer — la valeur est transmise directement à l'option `ignore` de [glob](https://www.npmjs.com/package/glob) — ce paramètre est optionel ;
 - `target`: la définition de la cible, là où la variable à initialiser sera trouvée — c'est un objet obligatoire qui contient :
   - `file`: le nom du fichier qui contient la variable (requis);
   - `variable`: le nom de la variable à initialiser avec les `require`s (requis).
@@ -97,7 +98,7 @@ var myVar = { fake: 'Fausse valeur de test' }
 Les chemins des fichiers sont traités ainsi :
 
 - le nom et chemin du fichier est pris relativement au fichier cible ;
-- l'extention est supprimée (utile pour les fichiers _TypeScript_ `.ts` qui sont transpilés en `.js` à l'exécution).
+- l'extention est supprimée (nécessaire pour, par exemple, les fichiers _TypeScript_ `.ts` qui sont transpilés en `.js` à l'exécution).
 
 Par exemple, dans un fichier d'index qui collecte tous des fichiers dans le même répertoire, la clé d'objet est simplement le nom du fichier sans chemin ni extention. Si le fichier est dans un sous-répertoire, son nom sera également présent (par exemple, `sousrep/fichier`). S'il est nécessaire de remonter dans les répertoires pour atteindre le fichier, la clé d'objet commencera par `..`.
 
@@ -113,15 +114,17 @@ Pour `ttypescript`, configurez votre fichier `tsconfig.json`. Par exemple :
         "transform": "ts-transform-auto-require",
         "autoRequires": [
           {
-            "glob": "themes/**/*.ts",
-            "ignore": ["**/index.ts", "**/*.spec.ts"],
+            "source": {
+              "glob": "themes/**/*.ts",
+              "ignore": ["**/index.ts", "**/*.spec.ts"]
+            },
             "target": {
               "file": "themes/index.ts",
               "variable": "allThemes"
             }
           },
           {
-            "glob": "**/loader-*.ts",
+            "source": { "glob": "**/loader-*.ts" },
             "target": {
               "file": "loader.ts",
               "variable": "loaders"
@@ -134,10 +137,12 @@ Pour `ttypescript`, configurez votre fichier `tsconfig.json`. Par exemple :
 }
 ```
 
+Le transformateur est de type `program` (qui est le type par défaut pour `ttypescript`).
+
 # Notes
 
 - Le même nom de fichier, et même la même cible complète peut apparaitre plusieurs fois dans la configuration. Tous les `require`s correspondants seront fusionnés.
 - Tous les variables correspondantes seront complètées, alors assurez-vous de ne pas avoir plusieurs variables avec le nom configuré (le transformateur ne tient pas compte des portées).
 - Les fichiers à requérir doivent être sous la racine du projet. Les fichiers hors de la racine du projet seront ignorés, même s'ils correspondent au glob fourni.
-- Merci d'ouvrir un incident si vous avez un problème à l'utilisation de ce transformateur. Même si je ne peux pas garantir de délai de réponse, je ferai de mon mieux pour corriger les problèmes et répondre aux questions.
-- Les contributions sont bien sûr bienvenues.
+- Merci d'ouvrir un incident si vous avez un problème à l'utilisation de ce transformateur. Même si nous ne pouvons pas garantir de délai de réponse, nous ferons notre possible pour corriger les problèmes et répondre aux questions.
+- Une _pull request_ est bien sûr bienvenue.

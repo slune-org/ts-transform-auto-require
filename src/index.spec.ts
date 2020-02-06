@@ -1,8 +1,8 @@
 /* eslint-disable prefer-arrow-callback, no-unused-expressions */
 import { expect } from 'chai'
+import Compiler, { CompilationResult } from 'ts-transform-test-compiler'
 
-import compile from './compile.spec'
-import { Configuration } from './configuration'
+import transformer from '.'
 
 describe('ts-transform-auto-import', function() {
   this.slow(4000)
@@ -11,7 +11,7 @@ describe('ts-transform-auto-import', function() {
   const testCases: {
     [name: string]: {
       root?: string
-      config: Configuration
+      config: any
       result: { constValues: any; varValues: any; letValues: any }
     }
   } = {
@@ -20,16 +20,15 @@ describe('ts-transform-auto-import', function() {
       config: {
         autoRequires: [
           {
-            glob: 'plugins/*.ts',
-            ignore: '**/index.ts',
+            source: { glob: 'plugins/*.ts', ignore: '**/index.ts' },
             target: { file: 'plugins/index.ts', variable: 'constValues' },
           },
           {
-            glob: 'plugins/specials/*.ts',
+            source: { glob: 'plugins/specials/*.ts' },
             target: { file: 'plugins/index.ts', variable: 'letValues' },
           },
           {
-            glob: 'plugins/specials/*',
+            source: { glob: 'plugins/specials/*' },
             target: { file: 'plugins/index.ts', variable: 'varValues' },
           },
         ],
@@ -55,7 +54,7 @@ describe('ts-transform-auto-import', function() {
       config: {
         autoRequires: [
           {
-            glob: 'plugins/specials/*.ts',
+            source: { glob: 'plugins/specials/*.ts' },
             target: { file: 'index.ts', variable: 'varValues' },
           },
         ],
@@ -71,12 +70,11 @@ describe('ts-transform-auto-import', function() {
       config: {
         autoRequires: [
           {
-            glob: 'plugins/*.ts',
-            ignore: '**/index.ts',
+            source: { glob: 'plugins/*.ts', ignore: '**/index.ts' },
             target: { file: 'plugins/index.ts', variable: 'constValues' },
           },
           {
-            glob: 'plugins/specials/*.ts',
+            source: { glob: 'plugins/specials/*.ts' },
             target: { file: 'plugins/index.ts', variable: 'constValues' },
           },
         ],
@@ -98,12 +96,11 @@ describe('ts-transform-auto-import', function() {
       config: {
         autoRequires: [
           {
-            glob: 'outside/*.ts',
+            source: { glob: 'outside/*.ts' },
             target: { file: 'plugins/index.ts', variable: 'letValues' },
           },
           {
-            glob: '**/*.ts',
-            ignore: '**/index.ts',
+            source: { glob: '**/*.ts', ignore: '**/index.ts' },
             target: { file: 'plugins/index.ts', variable: 'varValues' },
           },
         ],
@@ -125,8 +122,7 @@ describe('ts-transform-auto-import', function() {
       config: {
         autoRequires: [
           {
-            glob: '__test__/plugins/*.ts',
-            ignore: '**/index.ts',
+            source: { glob: '__test__/plugins/*.ts', ignore: '**/index.ts' },
             target: { file: '__test__/plugins/index.ts', variable: 'constValues' },
           },
         ],
@@ -146,7 +142,7 @@ describe('ts-transform-auto-import', function() {
       config: {
         autoRequires: [
           {
-            glob: __filename,
+            source: { glob: __filename },
             target: { file: 'plugins/index.ts', variable: 'varValues' },
           },
         ],
@@ -158,11 +154,101 @@ describe('ts-transform-auto-import', function() {
       },
     },
   }
+  const compiler = new Compiler(transformer, 'dist/__test__')
+
+  describe('Configuration problems', function() {
+    const regularConfig = { source: { glob: 'glob' }, target: { file: 'file', variable: 'variable' } }
+    const badConfigurationCases: {
+      [name: string]: { config: any; message: RegExp }
+    } = {
+      'bad configuration type': { config: true, message: /configuration must be an object/ },
+      'missing autoRequires': { config: {}, message: /missing “autoRequires” entry/ },
+      'bad autoRequires type': {
+        config: { autoRequires: regularConfig },
+        message: /“autoRequires” must be an array/,
+      },
+      'bad configuration item type': {
+        config: { autoRequires: [regularConfig, 'bad type'] },
+        message: /(item #2).*configuration must be an object/,
+      },
+      'missing source': {
+        config: { autoRequires: [{ target: regularConfig.target }] },
+        message: /(item #1).*missing “source” entry/,
+      },
+      'bad source type': {
+        config: { autoRequires: [regularConfig, { ...regularConfig, source: 'bad type' }] },
+        message: /(item #2).*“source” entry must be an object/,
+      },
+      'missing source.glob': {
+        config: { autoRequires: [{ source: { ignore: '*' }, target: regularConfig.target }] },
+        message: /(item #1).*missing “source.glob”/,
+      },
+      'bad source.glob type': {
+        config: { autoRequires: [{ source: { glob: true }, target: regularConfig.target }] },
+        message: /(item #1).*“source.glob” must be a string/,
+      },
+      'bad source.ignore type': {
+        config: {
+          autoRequires: [
+            { source: { glob: regularConfig.source.glob, ignore: {} }, target: regularConfig.target },
+          ],
+        },
+        message: /“source.ignore” must either be a string or a string array/,
+      },
+      'missing target': {
+        config: { autoRequires: [regularConfig, { source: regularConfig.source }] },
+        message: /(item #2).*missing “target” entry/,
+      },
+      'bad target type': {
+        config: { autoRequires: [{ ...regularConfig, target: 'bad type' }] },
+        message: /(item #1).*“target” entry must be an object/,
+      },
+      'missing target.file': {
+        config: {
+          autoRequires: [
+            { source: regularConfig.source, target: { variable: regularConfig.target.variable } },
+          ],
+        },
+        message: /(item #1).*missing “target.file”/,
+      },
+      'bad target.file type': {
+        config: {
+          autoRequires: [{ source: regularConfig.source, target: { ...regularConfig.target, file: true } }],
+        },
+        message: /(item #1).*“target.file” must be a string/,
+      },
+      'missing target.variable': {
+        config: {
+          autoRequires: [{ source: regularConfig.source, target: { file: regularConfig.target.file } }],
+        },
+        message: /(item #1).*missing “target.variable”/,
+      },
+      'bad target.variable type': {
+        config: {
+          autoRequires: [
+            { source: regularConfig.source, target: { ...regularConfig.target, variable: true } },
+          ],
+        },
+        message: /(item #1).*“target.variable” must be a string/,
+      },
+    }
+    Object.entries(badConfigurationCases).forEach(([name, { config, message }]) => {
+      it(`should throw an error if ${name}`, function() {
+        expect(() => compiler.setRootDir('__test__').compile('config', config)).to.throw(message)
+      })
+    })
+  })
 
   Object.entries(testCases).forEach(([name, testCase]) => {
     describe(name, function() {
+      let result: CompilationResult
+
       before(`Compile files to ${name}`, function() {
-        compile(name, testCase.root, testCase.config)
+        result = compiler
+          .setRootDir(testCase.root)
+          .setSourceFiles(testCase.root ? '/' : '__test__/')
+          .compile(name, testCase.config)
+        result.print()
       })
 
       const valueTypes: Array<'constValues' | 'varValues' | 'letValues'> = [
@@ -172,7 +258,7 @@ describe('ts-transform-auto-import', function() {
       ]
       valueTypes.forEach(valueType => {
         it(`should give correct ${valueType}`, function() {
-          expect(require(`../dist/__test__/${name}`)[valueType]).to.deep.equal(testCase.result[valueType])
+          expect(result.requireContent(undefined, valueType)).to.deep.equal(testCase.result[valueType])
         })
       })
     })

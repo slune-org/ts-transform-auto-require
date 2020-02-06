@@ -1,3 +1,4 @@
+import { NodeVisitor } from 'simple-ts-transform'
 import {
   Identifier,
   Node,
@@ -15,8 +16,7 @@ import {
   updateObjectLiteral,
 } from 'typescript'
 
-import Visitor from './Visitor'
-import VisitorContext, { DetectedFiles } from './VisitorContext'
+import TContext from './TContext'
 
 /**
  * Throws an internal error because of an incorrect type.
@@ -53,12 +53,8 @@ function assertObjectLiteralExpression(node: Node | undefined): asserts node is 
 /**
  * The visitor inserting requires to appropriate places.
  */
-export default class RequireInserter implements Visitor<VariableDeclaration> {
-  private readonly detectedFiles: DetectedFiles
-
-  public constructor(context: VisitorContext) {
-    this.detectedFiles = context.detectedFiles
-  }
+export default class RequireInserter implements NodeVisitor<VariableDeclaration> {
+  public constructor(private readonly context: TContext) {}
 
   public wants(node: Node): node is VariableDeclaration {
     return (
@@ -66,31 +62,33 @@ export default class RequireInserter implements Visitor<VariableDeclaration> {
       isIdentifier(node.name) &&
       !!node.initializer &&
       isObjectLiteralExpression(node.initializer) &&
-      node.name.getText() in this.detectedFiles
+      node.name.getText() in this.context.detectedFiles
     )
   }
 
-  public visit(node: VariableDeclaration): Node {
+  public visit(node: VariableDeclaration): Node[] {
     const identifier = node.name
     const initializer = node.initializer
     assertIdentifier(identifier)
     assertObjectLiteralExpression(initializer)
-    return updateVariableDeclaration(
-      node,
-      identifier,
-      node.type,
-      updateObjectLiteral(
-        initializer,
-        Object.entries(this.detectedFiles[identifier.getText()]).map(([filename, filepath]) =>
-          createPropertyAssignment(
-            createStringLiteral(filename),
-            createPropertyAccess(
-              createCall(createIdentifier('require'), undefined, [createStringLiteral(filepath)]),
-              createIdentifier('default')
+    return [
+      updateVariableDeclaration(
+        node,
+        identifier,
+        node.type,
+        updateObjectLiteral(
+          initializer,
+          Object.entries(this.context.detectedFiles[identifier.getText()]).map(([filename, filepath]) =>
+            createPropertyAssignment(
+              createStringLiteral(filename),
+              createPropertyAccess(
+                createCall(createIdentifier('require'), undefined, [createStringLiteral(filepath)]),
+                createIdentifier('default')
+              )
             )
           )
         )
-      )
-    )
+      ),
+    ]
   }
 }
