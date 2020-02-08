@@ -251,10 +251,10 @@ describe('ts-transform-auto-import', function() {
         result.print()
       })
 
-      const valueTypes: Array<'constValues' | 'varValues' | 'letValues'> = [
+      const valueTypes: Array<'constValues' | 'letValues' | 'varValues'> = [
         'constValues',
-        'varValues',
         'letValues',
+        'varValues',
       ]
       valueTypes.forEach(valueType => {
         it(`should give correct ${valueType}`, function() {

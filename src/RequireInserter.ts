@@ -1,22 +1,33 @@
 import { NodeVisitor } from 'simple-ts-transform'
 import {
+  AsExpression,
   Identifier,
   Node,
   ObjectLiteralExpression,
+  ParenthesizedExpression,
   VariableDeclaration,
   createCall,
   createIdentifier,
   createPropertyAccess,
   createPropertyAssignment,
   createStringLiteral,
+  isAsExpression,
   isIdentifier,
   isObjectLiteralExpression,
+  isParenthesizedExpression,
   isVariableDeclaration,
-  updateVariableDeclaration,
+  updateAsExpression,
   updateObjectLiteral,
+  updateParen,
+  updateVariableDeclaration,
 } from 'typescript'
 
 import TContext from './TContext'
+
+/**
+ * The managed initializers.
+ */
+type ManagedInitializer = AsExpression | ObjectLiteralExpression | ParenthesizedExpression
 
 /**
  * Throws an internal error because of an incorrect type.
@@ -39,15 +50,37 @@ function assertIdentifier(node: Node | undefined): asserts node is Identifier {
 }
 
 /**
- * Assert that the node is an object literal expression.
+ * Assert that the node is a managed initializer.
  *
  * @param node - The node to assert.
  */
-function assertObjectLiteralExpression(node: Node | undefined): asserts node is ObjectLiteralExpression {
+function assertManagedInitializer(node: Node | undefined): asserts node is ManagedInitializer {
   /* istanbul ignore if */
-  if (!node || !isObjectLiteralExpression(node)) {
+  if (
+    !node ||
+    !(isAsExpression(node) || isObjectLiteralExpression(node) || isParenthesizedExpression(node))
+  ) {
     incorrectNodeType()
   }
+}
+
+/**
+ * Indicate if the initializer is managed by the transformer.
+ *
+ * @param node - The node to test.
+ * @returns True if this node is a managed expression.
+ */
+function isManagedInitializer(node: Node | undefined): node is ManagedInitializer {
+  if (node) {
+    if (isObjectLiteralExpression(node)) {
+      return true
+    } else if (isAsExpression(node)) {
+      return isManagedInitializer(node.expression)
+    } else if (isParenthesizedExpression(node)) {
+      return isManagedInitializer(node.expression)
+    }
+  }
+  return false
 }
 
 /**
@@ -60,35 +93,50 @@ export default class RequireInserter implements NodeVisitor<VariableDeclaration>
     return (
       isVariableDeclaration(node) &&
       isIdentifier(node.name) &&
-      !!node.initializer &&
-      isObjectLiteralExpression(node.initializer) &&
+      isManagedInitializer(node.initializer) &&
       node.name.getText() in this.context.detectedFiles
     )
   }
 
   public visit(node: VariableDeclaration): Node[] {
     const identifier = node.name
-    const initializer = node.initializer
     assertIdentifier(identifier)
-    assertObjectLiteralExpression(initializer)
     return [
       updateVariableDeclaration(
         node,
         identifier,
         node.type,
-        updateObjectLiteral(
-          initializer,
-          Object.entries(this.context.detectedFiles[identifier.getText()]).map(([filename, filepath]) =>
-            createPropertyAssignment(
-              createStringLiteral(filename),
-              createPropertyAccess(
-                createCall(createIdentifier('require'), undefined, [createStringLiteral(filepath)]),
-                createIdentifier('default')
-              )
+        this.updateManagedInitializer(node.initializer, identifier.getText())
+      ),
+    ]
+  }
+
+  /**
+   * Update (fill-in) the initializer node. The node is expected to be a managed initializer.
+   *
+   * @param node - The node to update.
+   * @param variable - The name of the variable to update.
+   * @returns The updated node.
+   */
+  private updateManagedInitializer(node: Node | undefined, variable: string): ManagedInitializer {
+    assertManagedInitializer(node)
+    if (isAsExpression(node)) {
+      return updateAsExpression(node, this.updateManagedInitializer(node.expression, variable), node.type)
+    } else if (isParenthesizedExpression(node)) {
+      return updateParen(node, this.updateManagedInitializer(node.expression, variable))
+    } else {
+      return updateObjectLiteral(
+        node,
+        Object.entries(this.context.detectedFiles[variable]).map(([filename, filepath]) =>
+          createPropertyAssignment(
+            createStringLiteral(filename),
+            createPropertyAccess(
+              createCall(createIdentifier('require'), undefined, [createStringLiteral(filepath)]),
+              createIdentifier('default')
             )
           )
         )
-      ),
-    ]
+      )
+    }
   }
 }
