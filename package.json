@@ -1,6 +1,6 @@
 {
   "name": "ts-transform-auto-require",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Typescript transformer used to require all files matching a glob",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
