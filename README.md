@@ -89,15 +89,22 @@ The transformer holds its configuration under the `autoRequires` parameters, whi
 
 There is currently no way of declaring a transformer in the vanilla _TypeScript_ compiler. If you do not want to write your own compiler using the `typescript` API, you can use the [ttypescript](https://www.npmjs.com/package/ttypescript) wrapper.
 
-## Variable definition
+## Automatic fill-in
 
-The variable to be filled in may be declared using `const`, `let`, or `var`. It **may** be followed with a type definition. It **must** be followed with an object literal (empty or not) for initialization.
+The code part to fill in by the transformer has to follow those rules:
 
-All the below variable declarations are valuable for automatic filling:
+- it **must** be a variable declaration, using `const`, `let`, or `var`;
+- the variable name **may** be followed by a type definition;
+- the variable **must** be followed by an immediate initialization;
+- the initialization value **must** be an object literal;
+- the initialization object **can** be empty or not;
+- the initialization **may** be followed by a type cast.
+
+All the below variable declarations are suitable for automatic filling:
 
 ```typescript
 const allThemes: { [name: string]: Theme } = {}
-let loaders: any = {}
+let loaders = {} as { [name: string]: Loader; default: Loader }
 var myVar = { fake: 'Fake testing value' }
 ```
 
@@ -153,4 +160,4 @@ The transformer is of type `program` (which is the default for `ttypescript`).
 - All matching variables will be filled in, so ensure not to have multiple variables with the configured name (the transformer does not care of the scopes).
 - Files to require must be under the project root. Files outside of the root directory will be ignored, even if they match the provided glob.
 - Please file an issue if you have any problem using the transformer. Even though we cannot guarantee a response time, we will do our best to correct problems or answer questions.
-- A pull request is of course always welcome.
+- Contributions (_pull request_) are welcome.

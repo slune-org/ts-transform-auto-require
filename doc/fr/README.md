@@ -81,15 +81,22 @@ Le transformateur contient sa configuration sous le paramètre `autoRequires`, q
 
 Il n'y a actuellement pas moyen de déclarer un transformateur dans le compilateur _TypeScript_ standard. Si vous ne souhaitez pas écrire votre propre compilateur en utilisant l'API `typescript`, vous pouvez utiliser la surcouche [ttypescript](https://www.npmjs.com/package/ttypescript).
 
-## Définition de la variable
+## Remplissage automatique
 
-La variable à compléter peut être déclarée en utilisant `const`, `let` ou `var`. Elle **peut** être suivie d'une définition de type. Elle **doit** être suivie d'un litéral d'objet (vide ou non) pour l'initialisation.
+La portion de code à remplir par le transformateur doit suivre ces règles :
+
+- cela **doit** être une déclaration de variable utilisant `const`, `let` ou `var` ;
+- le nom de variable **peut** être suivi d'une définition de type ;
+- la variable **doit** être suivie par une initialisation immédiate ;
+- la valeur de l'initialisation **doit** être un litéral d'objet ;
+- l'objet d'initialisation **peut** être vide ou non ;
+- l'initialisation **peut** être suivie par un transtypage.
 
 Toutes les déclarations de variables ci-dessous sont valables pour le remplissage automatique :
 
 ```typescript
 const allThemes: { [name: string]: Theme } = {}
-let loaders: any = {}
+let loaders = {} as { [name: string]: Loader; default: Loader }
 var myVar = { fake: 'Fausse valeur de test' }
 ```
 
@@ -145,4 +152,4 @@ Le transformateur est de type `program` (qui est le type par défaut pour `ttype
 - Tous les variables correspondantes seront complètées, alors assurez-vous de ne pas avoir plusieurs variables avec le nom configuré (le transformateur ne tient pas compte des portées).
 - Les fichiers à requérir doivent être sous la racine du projet. Les fichiers hors de la racine du projet seront ignorés, même s'ils correspondent au glob fourni.
 - Merci d'ouvrir un incident si vous avez un problème à l'utilisation de ce transformateur. Même si nous ne pouvons pas garantir de délai de réponse, nous ferons notre possible pour corriger les problèmes et répondre aux questions.
-- Une _pull request_ est bien sûr bienvenue.
+- Les contributions (_pull request_) sont bienvenues.
