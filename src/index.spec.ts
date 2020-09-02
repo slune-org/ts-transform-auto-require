@@ -4,7 +4,7 @@ import Compiler, { CompilationResult } from 'ts-transform-test-compiler'
 
 import transformer from '.'
 
-describe('ts-transform-auto-import', function() {
+describe('ts-transform-auto-import', function () {
   this.slow(4000)
   this.timeout(10000)
 
@@ -156,11 +156,12 @@ describe('ts-transform-auto-import', function() {
   }
   const compiler = new Compiler(transformer, 'dist/__test__')
 
-  describe('Configuration problems', function() {
+  describe('Configuration problems', function () {
     const regularConfig = { source: { glob: 'glob' }, target: { file: 'file', variable: 'variable' } }
     const badConfigurationCases: {
       [name: string]: { config: any; message: RegExp }
     } = {
+      'null configuration type': { config: null, message: /configuration must be an object/ },
       'bad configuration type': { config: true, message: /configuration must be an object/ },
       'missing autoRequires': { config: {}, message: /missing “autoRequires” entry/ },
       'bad autoRequires type': {
@@ -233,17 +234,17 @@ describe('ts-transform-auto-import', function() {
       },
     }
     Object.entries(badConfigurationCases).forEach(([name, { config, message }]) => {
-      it(`should throw an error if ${name}`, function() {
+      it(`should throw an error if ${name}`, function () {
         expect(() => compiler.setRootDir('__test__').compile('config', config)).to.throw(message)
       })
     })
   })
 
   Object.entries(testCases).forEach(([name, testCase]) => {
-    describe(name, function() {
+    describe(name, function () {
       let result: CompilationResult
 
-      before(`Compile files to ${name}`, function() {
+      before(`Compile files to ${name}`, function () {
         result = compiler
           .setRootDir(testCase.root)
           .setSourceFiles(testCase.root ? '/' : '__test__/')
@@ -257,7 +258,7 @@ describe('ts-transform-auto-import', function() {
         'varValues',
       ]
       valueTypes.forEach(valueType => {
-        it(`should give correct ${valueType}`, function() {
+        it(`should give correct ${valueType}`, function () {
           expect(result.requireContent(undefined, valueType)).to.deep.equal(testCase.result[valueType])
         })
       })

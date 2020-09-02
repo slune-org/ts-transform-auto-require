@@ -1,28 +1,21 @@
-import { NodeVisitor } from 'simple-ts-transform'
-import {
+import type { NodeVisitor } from 'simple-ts-transform'
+import type {
   AsExpression,
   Identifier,
   Node,
   ObjectLiteralExpression,
   ParenthesizedExpression,
   VariableDeclaration,
-  createCall,
-  createIdentifier,
-  createPropertyAccess,
-  createPropertyAssignment,
-  createStringLiteral,
+} from 'typescript'
+import {
   isAsExpression,
   isIdentifier,
   isObjectLiteralExpression,
   isParenthesizedExpression,
   isVariableDeclaration,
-  updateAsExpression,
-  updateObjectLiteral,
-  updateParen,
-  updateVariableDeclaration,
 } from 'typescript'
 
-import TContext from './TContext'
+import type TContext from './TContext'
 
 /**
  * The managed initializers.
@@ -99,12 +92,14 @@ export default class RequireInserter implements NodeVisitor<VariableDeclaration>
   }
 
   public visit(node: VariableDeclaration): Node[] {
+    const { updateVariableDeclaration } = this.context.factory
     const identifier = node.name
     assertIdentifier(identifier)
     return [
       updateVariableDeclaration(
         node,
         identifier,
+        node.exclamationToken,
         node.type,
         this.updateManagedInitializer(node.initializer, identifier.getText())
       ),
@@ -120,18 +115,28 @@ export default class RequireInserter implements NodeVisitor<VariableDeclaration>
    */
   private updateManagedInitializer(node: Node | undefined, variable: string): ManagedInitializer {
     assertManagedInitializer(node)
+    const {
+      createCallExpression,
+      createIdentifier,
+      createPropertyAccessExpression,
+      createPropertyAssignment,
+      createStringLiteral,
+      updateAsExpression,
+      updateObjectLiteralExpression,
+      updateParenthesizedExpression,
+    } = this.context.factory
     if (isAsExpression(node)) {
       return updateAsExpression(node, this.updateManagedInitializer(node.expression, variable), node.type)
     } else if (isParenthesizedExpression(node)) {
-      return updateParen(node, this.updateManagedInitializer(node.expression, variable))
+      return updateParenthesizedExpression(node, this.updateManagedInitializer(node.expression, variable))
     } else {
-      return updateObjectLiteral(
+      return updateObjectLiteralExpression(
         node,
         Object.entries(this.context.detectedFiles[variable]).map(([filename, filepath]) =>
           createPropertyAssignment(
             createStringLiteral(filename),
-            createPropertyAccess(
-              createCall(createIdentifier('require'), undefined, [createStringLiteral(filepath)]),
+            createPropertyAccessExpression(
+              createCallExpression(createIdentifier('require'), undefined, [createStringLiteral(filepath)]),
               createIdentifier('default')
             )
           )

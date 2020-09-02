@@ -1,7 +1,7 @@
 import { sync as searchFiles } from 'glob'
 import { isAbsolute, relative } from 'path'
-import { NodeVisitorContext } from 'simple-ts-transform'
-import { Program } from 'typescript'
+import type { NodeVisitorContext } from 'simple-ts-transform'
+import type { NodeFactory, Program, TransformationContext } from 'typescript'
 
 /**
  * Throw an error because of configuration problem.
@@ -23,7 +23,7 @@ function configurationError(message: string, item?: number): never {
  * @param configuration - The configuration to test.
  */
 function assertIsConfiguration(configuration: any): asserts configuration is { autoRequires: any[] } {
-  if (typeof configuration !== 'object') {
+  if (typeof configuration !== 'object' || !configuration) {
     configurationError('configuration must be an object')
   }
   if (!('autoRequires' in configuration)) {
@@ -47,7 +47,7 @@ function assertIsConfigurationItem(
   source: { glob: string; ignore?: string | string[] }
   target: { file: string; variable: string }
 } {
-  if (typeof configurationItem !== 'object') {
+  if (typeof configurationItem !== 'object' || !configurationItem) {
     configurationError('configuration must be an object', index)
   }
   if (!('source' in configurationItem)) {
@@ -94,6 +94,11 @@ function assertIsConfigurationItem(
  */
 export default class TContext implements NodeVisitorContext {
   /**
+   * The node factory.
+   */
+  private currentFactory!: NodeFactory
+
+  /**
    * The base path for the compilation.
    */
   public readonly basePath: string
@@ -133,7 +138,7 @@ export default class TContext implements NodeVisitorContext {
    * @param program - The program object.
    * @param configuration - The provided configuration.
    */
-  public constructor(program: Program, configuration: any) {
+  public constructor(program: Program, configuration: unknown) {
     this.basePath = program.getCompilerOptions().rootDir ?? program.getCurrentDirectory()
 
     // Read the file lists
@@ -158,7 +163,15 @@ export default class TContext implements NodeVisitorContext {
     })
   }
 
-  public initNewFile(): void {
+  public initNewFile(context: TransformationContext): void {
+    this.currentFactory = context.factory
     this.detectedFiles = {}
+  }
+
+  /**
+   * @returns The node factory.
+   */
+  public get factory(): NodeFactory {
+    return this.currentFactory
   }
 }

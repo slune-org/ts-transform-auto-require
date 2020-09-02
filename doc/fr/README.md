@@ -40,22 +40,16 @@ Object.entries(allThemes).forEach(([name, theme]) => createTheme(name, theme))
 
 # Langue
 
-Slune étant une entreprise française, vous trouverez tous les documents et messages en français. Les autres traductions sont bienvenues.
+Les documents et messages, le code (y compris les noms de variable et commentaires), sont en anglais.
 
-Cependant, l'anglais étant la langue de la programmation, le code, y compris les noms de variable et commentaires, sont en anglais.
+Cependant, Slune étant une entreprise française, tous les documents et messages importants doivent également être fournis en français. Les autres traductions sont bienvenues.
 
 # Installation
 
-L'installation se fait avec la commande `npm install` :
+L’installation se fait avec la commande `npm install` :
 
 ```bash
 $ npm install --save-dev ts-transform-auto-require
-```
-
-Si vous préférez utiliser `yarn` :
-
-```bash
-$ yarn add --dev ts-transform-auto-require
 ```
 
 # Pourquoi aurai-je besoin de ça ?
@@ -151,5 +145,9 @@ Le transformateur est de type `program` (qui est le type par défaut pour `ttype
 - Le même nom de fichier, et même la même cible complète peut apparaitre plusieurs fois dans la configuration. Tous les `require`s correspondants seront fusionnés.
 - Tous les variables correspondantes seront complètées, alors assurez-vous de ne pas avoir plusieurs variables avec le nom configuré (le transformateur ne tient pas compte des portées).
 - Les fichiers à requérir doivent être sous la racine du projet. Les fichiers hors de la racine du projet seront ignorés, même s'ils correspondent au glob fourni.
-- Merci d'ouvrir un incident si vous avez un problème à l'utilisation de ce transformateur. Même si nous ne pouvons pas garantir de délai de réponse, nous ferons notre possible pour corriger les problèmes et répondre aux questions.
-- Les contributions (_pull request_) sont bienvenues.
+
+# Contribuer
+
+Bien que nous ne puissions pas garantir un temps de réponse, n’hésitez pas à ouvrir un incident si vous avez une question ou un problème pour utiliser ce paquet.
+
+Les _Pull Requests_ sont bienvenues. Vous pouvez bien sûr soumettre des corrections ou améliorations de code, mais n’hésitez pas également à améliorer la documentation, même pour de petites fautes d’orthographe ou de grammaire.

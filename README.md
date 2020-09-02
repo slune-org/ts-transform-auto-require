@@ -46,9 +46,9 @@ Object.entries(allThemes).forEach(([name, theme]) => createTheme(name, theme))
 
 # Language/langue
 
-Because Slune is French firm, you will find all documents and messages in French. Other translations are welcome.
+Documents, messages, code (including variable names and comments), are in English.
 
-Anyway, because English is the language of programming, the code, including variable names and comments, are in English.
+Anyway, because Slune is French firm, all documents and important messages must also be provided in French. Other translations are welcome.
 
 :fr: Une version française de ce document se trouve [ici](doc/fr/README.md).
 
@@ -58,12 +58,6 @@ Installation is done using `npm install` command:
 
 ```bash
 $ npm install --save-dev ts-transform-auto-require
-```
-
-If you prefer using `yarn`:
-
-```bash
-$ yarn add --dev ts-transform-auto-require
 ```
 
 # Why would I need that?
@@ -159,5 +153,9 @@ The transformer is of type `program` (which is the default for `ttypescript`).
 - The same file name, and even the same full target can appear multiple times in the configuration. All matching `require`s will be merged.
 - All matching variables will be filled in, so ensure not to have multiple variables with the configured name (the transformer does not care of the scopes).
 - Files to require must be under the project root. Files outside of the root directory will be ignored, even if they match the provided glob.
-- Please file an issue if you have any problem using the transformer. Even though we cannot guarantee a response time, we will do our best to correct problems or answer questions.
-- Contributions (_pull request_) are welcome.
+
+# Contributing
+
+Even though we cannot guarantee a response time, please feel free to file an issue if you have any question or problem using the package.
+
+_Pull Requests_ are welcome. You can, of course, submit corrections or improvements for code, but do not hesitate to also improve documentation, even for small spell or grammar errors.
