@@ -1,8 +1,9 @@
 import { dirname, extname, relative, resolve, sep as pathSep } from 'path'
-import { NodeVisitor } from 'simple-ts-transform'
-import { Node, SourceFile, isSourceFile } from 'typescript'
+import type { NodeVisitor } from 'simple-ts-transform'
+import type { Node, SourceFile } from 'typescript'
+import { isSourceFile } from 'typescript'
 
-import TContext from './TContext'
+import type TContext from './TContext'
 
 /**
  * Format the path to posix.
