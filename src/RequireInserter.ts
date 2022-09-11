@@ -1,6 +1,7 @@
 import type { NodeVisitor } from 'simple-ts-transform'
 import type {
   AsExpression,
+  Expression,
   Identifier,
   Node,
   ObjectLiteralExpression,
@@ -132,15 +133,18 @@ export default class RequireInserter implements NodeVisitor<VariableDeclaration>
     } else {
       return updateObjectLiteralExpression(
         node,
-        Object.entries(this.context.detectedFiles[variable]).map(([filename, filepath]) =>
-          createPropertyAssignment(
-            createStringLiteral(filename),
-            createPropertyAccessExpression(
-              createCallExpression(createIdentifier('require'), undefined, [createStringLiteral(filepath)]),
+        Object.entries(this.context.detectedFiles[variable]).map(([filename, fileDefinition]) => {
+          let requireExpression: Expression = createCallExpression(createIdentifier('require'), undefined, [
+            createStringLiteral(fileDefinition.filePath),
+          ])
+          if (fileDefinition.sourceCode) {
+            requireExpression = createPropertyAccessExpression(
+              requireExpression,
               createIdentifier('default')
             )
-          )
-        )
+          }
+          return createPropertyAssignment(createStringLiteral(filename), requireExpression)
+        })
       )
     }
   }

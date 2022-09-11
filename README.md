@@ -79,7 +79,8 @@ The transformer holds its configuration under the `autoRequires` parameters, whi
   - `ignore`: either a string or an array of strings for the files to ignore — the value is directly given to the `ignore` option of [glob](https://www.npmjs.com/package/glob) — this parameter is optional.
 - `target`: the definition of the target, where variable to be initialized will be found — this is a mandatory object containing:
   - `file`: the name of the file containing the variable (mandatory);
-  - `variable`: the name of the variable to initialize with the `require`s (mandatory).
+  - `variable`: the name of the variable to initialize with the `require`s (mandatory);
+  - `codeExtensions`: a list of extensions used to identify source code files — default is `['js', 'jsx', 'ts', 'tsx']`.
 
 There is currently no way of declaring a transformer in the vanilla _TypeScript_ compiler. If you do not want to write your own compiler using the `typescript` API, you can use the [ttypescript](https://www.npmjs.com/package/ttypescript) wrapper.
 
@@ -104,12 +105,25 @@ var myVar = { fake: 'Fake testing value' }
 
 ## Required file names
 
-File paths are treated like that:
+Files are treated differently whether they are considered source code files or not (see configuration entry `target.codeExtensions`). JSON files, for example, can be required this way, but for other extensions, it is the responsibility of the developper to do what is needed in order for NodeJS to be able to load the files.
 
-- the file name and path is taken relatively to the target file;
-- the extension is removed (needed for, for example, _TypeScript_ `.ts` files which are transpiled into `.js` for runtime).
+### Source code files
+
+Source code file paths are treated like that:
+
+- the file name (with path) is taken relatively to the target file;
+- the extension is removed (needed for, for example, _TypeScript_ `.ts` files which are transpiled into `.js` at runtime).
+
+In the variable, the key is associated to the `default` export of the file.
 
 For example, in an index file collecting files in the same directory, the entry key is then simply the base name of the file without extension. If the file is in a subfolder, the subfolder name will also be present (e.g. `subfolder/file`). If we must climb up a folder (or more) to reach the file, the entry key will start with `..`.
+
+### Ordinary files
+
+Treatments of ordinary files have the following differences:
+
+- the extension is kept, both in the variable key and in the `require` statement;
+- in the variable, the key is associated to the full `require` result.
 
 ## Configuration with ttypescript
 
@@ -133,10 +147,11 @@ For `ttypescript`, configure your `tsconfig.json`. Example:
             }
           },
           {
-            "source": { "glob": "**/loader-*.ts" },
+            "source": { "glob": "**/loader-*.cts" },
             "target": {
               "file": "loader.ts",
-              "variable": "loaders"
+              "variable": "loaders",
+              "codeExtensions": ["cts"]
             }
           }
         ]

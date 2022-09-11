@@ -4,6 +4,56 @@ import type { NodeVisitorContext } from 'simple-ts-transform'
 import type { NodeFactory, Program, TransformationContext } from 'typescript'
 
 /**
+ * The configuration as expected from user.
+ */
+interface Configuration {
+  /**
+   * Where to read sources.
+   */
+  source: {
+    /**
+     * The glob expression to select files.
+     */
+    glob: string
+
+    /**
+     * An optional file or list of files to ignore.
+     */
+    ignore?: string | string[]
+  }
+
+  /**
+   * Treatment on target.
+   */
+  target: {
+    /**
+     * The name of the file in which modifications must be done.
+     */
+    file: string
+
+    /**
+     * The name of the variable to update in the file.
+     */
+    variable: string
+
+    /**
+     * Extensions of files to be considered source code.
+     */
+    codeExtensions?: string[]
+  }
+}
+
+/**
+ * An auto-require element.
+ */
+type AutoRequire = Required<Configuration['target']> & {
+  /**
+   * The files matching the provided glob.
+   */
+  foundFiles: string[]
+}
+
+/**
  * Throw an error because of configuration problem.
  *
  * @param message - The message for the configuration error.
@@ -15,6 +65,18 @@ function configurationError(message: string, item?: number): never {
     itemId = ` (item #${item + 1})`
   }
   throw new Error(`Error in transformer configuration${itemId}: ${message}`)
+}
+
+/**
+ * Set default values to optional entries in the configuration.
+ *
+ * @param configurationTarget - The configuration for the target.
+ * @returns The configuration with default values.
+ */
+function setDefault(configurationTarget: Configuration['target']): Required<Configuration['target']> {
+  const result = { ...configurationTarget }
+  result.codeExtensions = result.codeExtensions ?? ['js', 'jsx', 'ts', 'tsx']
+  return result as Required<Configuration['target']>
 }
 
 /**
@@ -43,10 +105,7 @@ function assertIsConfiguration(configuration: any): asserts configuration is { a
 function assertIsConfigurationItem(
   configurationItem: any,
   index: number
-): asserts configurationItem is {
-  source: { glob: string; ignore?: string | string[] }
-  target: { file: string; variable: string }
-} {
+): asserts configurationItem is Configuration {
   if (typeof configurationItem !== 'object' || !configurationItem) {
     configurationError('configuration must be an object', index)
   }
@@ -87,6 +146,12 @@ function assertIsConfigurationItem(
   if (typeof configurationItem.target.variable !== 'string') {
     configurationError('“target.variable” must be a string', index)
   }
+  if (
+    'codeExtensions' in configurationItem.target &&
+    !Array.isArray(configurationItem.target.codeExtensions)
+  ) {
+    configurationError('“target.codeExtensions” must be a string array')
+  }
 }
 
 /**
@@ -106,29 +171,17 @@ export default class TContext implements NodeVisitorContext {
   /**
    * All the configuration elements.
    */
-  public readonly autoRequires: Array<{
-    /**
-     * The name of the file in which modifications must be done.
-     */
-    file: string
-
-    /**
-     * The name of the variable to update in the file.
-     */
-    variable: string
-
-    /**
-     * The files matching the provided glob.
-     */
-    foundFiles: string[]
-  }>
+  public readonly autoRequires: AutoRequire[]
 
   /**
    * The detected files.
    */
   public detectedFiles: {
     [variable: string]: {
-      [name: string]: string
+      [name: string]: {
+        filePath: string
+        sourceCode: boolean
+      }
     }
   } = {}
 
@@ -159,7 +212,7 @@ export default class TContext implements NodeVisitorContext {
         .map(filename => (isAbsolute(filename) ? relative(this.basePath, filename) : filename))
         .filter(filename => !filename.startsWith('..'))
         .map(filename => filename.replace(/\\/g, '/'))
-      return { ...config.target, foundFiles }
+      return { ...setDefault(config.target), foundFiles }
     })
   }
 

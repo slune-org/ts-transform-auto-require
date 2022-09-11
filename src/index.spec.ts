@@ -1,5 +1,7 @@
 /* eslint-disable prefer-arrow-callback, no-unused-expressions */
 import { expect } from 'chai'
+import { copyFile } from 'fs/promises'
+import { join } from 'path'
 import Compiler, { CompilationResult } from 'ts-transform-test-compiler'
 
 import transformer from '.'
@@ -28,7 +30,7 @@ describe('ts-transform-auto-import', function () {
             target: { file: 'plugins/index.ts', variable: 'letValues' },
           },
           {
-            source: { glob: 'plugins/specials/*' },
+            source: { glob: 'plugins/specials/*', ignore: '**/*.cts' },
             target: { file: 'plugins/index.ts', variable: 'varValues' },
           },
         ],
@@ -88,6 +90,34 @@ describe('ts-transform-auto-import', function () {
           'specials/other': 'This is another special module',
         },
         letValues: {},
+        varValues: { initialized: true },
+      },
+    },
+    'Test with code extension option': {
+      root: '__test__',
+      config: {
+        autoRequires: [
+          {
+            source: { glob: 'plugins/*.json' },
+            target: { file: 'plugins/index.ts', variable: 'constValues' },
+          },
+          {
+            source: { glob: 'plugins/specials/*.cts' },
+            target: {
+              file: 'plugins/index.ts',
+              variable: 'letValues',
+              codeExtensions: ['cts'],
+            },
+          },
+        ],
+      },
+      result: {
+        constValues: {
+          'content.json': { from: 'content.json' },
+        },
+        letValues: {
+          'specials/common': 'This is a CommonJS module',
+        },
         varValues: { initialized: true },
       },
     },
@@ -232,6 +262,17 @@ describe('ts-transform-auto-import', function () {
         },
         message: /(item #1).*“target.variable” must be a string/,
       },
+      'bad target.codeExtensions type': {
+        config: {
+          autoRequires: [
+            {
+              source: regularConfig.source,
+              target: { ...regularConfig.target, codeExtensions: true },
+            },
+          ],
+        },
+        message: /“target.codeExtensions” must be a string array/,
+      },
     }
     Object.entries(badConfigurationCases).forEach(([name, { config, message }]) => {
       it(`should throw an error if ${name}`, function () {
@@ -247,9 +288,16 @@ describe('ts-transform-auto-import', function () {
       before(`Compile files to ${name}`, function () {
         result = compiler
           .setRootDir(testCase.root)
-          .setSourceFiles(testCase.root ? '/' : '__test__/')
+          .setSourceFiles((testCase.root ? '/' : '__test__/') + '**/*.@(ts|cts)')
           .compile(name, testCase.config)
         result.print()
+      })
+
+      before(`Copy JSON file to ${name}`, function () {
+        return copyFile(
+          join('__test__', 'plugins', 'content.json'),
+          join('dist', '__test__', name, 'plugins', 'content.json')
+        )
       })
 
       const valueTypes: Array<'constValues' | 'letValues' | 'varValues'> = [
