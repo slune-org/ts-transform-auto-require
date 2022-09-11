@@ -48,14 +48,22 @@ export default class FileAnalyzer implements NodeVisitor<SourceFile> {
           .map(filename => resolve(this.context.basePath, filename))
           // …and get a path relative to current file.
           .map(filename => relative(currentDir, filename))
-          // Remove extension, if any
-          .map(filename => filename.slice(0, -extname(filename).length))
-          .forEach(
-            filename =>
-              (this.context.detectedFiles[configuration.variable][filename] = filename.startsWith('.')
-                ? filename
-                : '.' + pathSep + filename)
-          )
+          // Manage extension, if any
+          .map<[string, boolean]>(filename => {
+            const baseFilename = filename.slice(0, -extname(filename).length)
+            const extension = filename.slice(baseFilename.length + 1)
+            if (configuration.codeExtensions.includes(extension)) {
+              return [baseFilename, true]
+            } else {
+              return [filename, false]
+            }
+          })
+          .forEach(([filename, sourceCode]) => {
+            this.context.detectedFiles[configuration.variable][filename] = {
+              filePath: filename.startsWith('.') ? filename : '.' + pathSep + filename,
+              sourceCode,
+            }
+          })
       })
     return [node]
   }

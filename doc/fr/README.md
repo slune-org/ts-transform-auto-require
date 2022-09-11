@@ -66,12 +66,13 @@ En utilisant le transformateur, vous n'aurez pas besoin de faire cela. Écrivez 
 
 Le transformateur contient sa configuration sous le paramètre `autoRequires`, qui est un tableau d'objets contenant :
 
-- `source`: la définition de la source, les fichiers à requérir — c'est un objet obligatoire contenant :
-  - `glob`: le patron [glob](https://www.npmjs.com/package/glob) utilisé pour sélectionner les fichiers, relatif à la racine du projet — ce paramètre est requis ;
-  - `ignore`: une chaine de caractères ou un tableau de chaines de caractères pour les fichiers à ignorer — la valeur est transmise directement à l'option `ignore` de [glob](https://www.npmjs.com/package/glob) — ce paramètre est optionel ;
-- `target`: la définition de la cible, là où la variable à initialiser sera trouvée — c'est un objet obligatoire qui contient :
-  - `file`: le nom du fichier qui contient la variable (requis);
-  - `variable`: le nom de la variable à initialiser avec les `require`s (requis).
+- `source`: la définition de la source, les fichiers à requérir — c'est un objet obligatoire contenant :
+  - `glob`: le patron [glob](https://www.npmjs.com/package/glob) utilisé pour sélectionner les fichiers, relatif à la racine du projet — ce paramètre est requis ;
+  - `ignore`: une chaine de caractères ou un tableau de chaines de caractères pour les fichiers à ignorer — la valeur est transmise directement à l'option `ignore` de [glob](https://www.npmjs.com/package/glob) — ce paramètre est optionel ;
+- `target`: la définition de la cible, là où la variable à initialiser sera trouvée — c'est un objet obligatoire qui contient :
+  - `file`: le nom du fichier qui contient la variable (requis) ;
+  - `variable`: le nom de la variable à initialiser avec les `require`s (requis) ;
+  - `codeExtensions`: une liste d’extensions utilisées pour identifier les fichiers de code source — par défaut, `['js', 'jsx', 'ts', 'tsx']`.
 
 Il n'y a actuellement pas moyen de déclarer un transformateur dans le compilateur _TypeScript_ standard. Si vous ne souhaitez pas écrire votre propre compilateur en utilisant l'API `typescript`, vous pouvez utiliser la surcouche [ttypescript](https://www.npmjs.com/package/ttypescript).
 
@@ -96,12 +97,25 @@ var myVar = { fake: 'Fausse valeur de test' }
 
 ## Noms des fichiers requis
 
-Les chemins des fichiers sont traités ainsi :
+Les fichiers sont traités différemment selon qu’ils sont considérés comme des fichiers de code source ou non (voir l’option de configuration `target.codeExtensions`). Les fichiers JSON, par exemple, peuvent être requis de cette manière, mais pour les autres extensions, il est de la responsabilité du développeur de faire ce qui est requis pour que NodeJS soit capable de charger le fichier.
 
-- le nom et chemin du fichier est pris relativement au fichier cible ;
+### Fichiers de code source
+
+Les chemins des fichiers de code source sont traités ainsi :
+
+- le nom (avec chemin) du fichier est pris relativement au fichier cible ;
 - l'extention est supprimée (nécessaire pour, par exemple, les fichiers _TypeScript_ `.ts` qui sont transpilés en `.js` à l'exécution).
 
+Dans la variable, la clé est associée à l’export `default` du fichier.
+
 Par exemple, dans un fichier d'index qui collecte tous des fichiers dans le même répertoire, la clé d'objet est simplement le nom du fichier sans chemin ni extention. Si le fichier est dans un sous-répertoire, son nom sera également présent (par exemple, `sousrep/fichier`). S'il est nécessaire de remonter dans les répertoires pour atteindre le fichier, la clé d'objet commencera par `..`.
+
+### Fichiers ordinaires
+
+Le traitement des fichiers ordinaire a les différences suivantes :
+
+- l’extension est conservée, autant dans la clé de la variable que dans l’instruction `require` ;
+- dans la variable, la clé est associé au résultat complet du `require`.
 
 ## Configuration avec ttypescript
 
@@ -125,10 +139,11 @@ Pour `ttypescript`, configurez votre fichier `tsconfig.json`. Par exemple :
             }
           },
           {
-            "source": { "glob": "**/loader-*.ts" },
+            "source": { "glob": "**/loader-*.cts" },
             "target": {
               "file": "loader.ts",
-              "variable": "loaders"
+              "variable": "loaders",
+              "codeExtensions": ["cts"]
             }
           }
         ]
