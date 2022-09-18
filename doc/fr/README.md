@@ -14,7 +14,7 @@ Ce transformateur complète l'initialisation d'une variable d'un fichier avec le
 et ce contenu :
 
 ```typescript
-// locales/index.ts
+// themes/index.ts
 import { Theme, createTheme } from '../Theme'
 
 const allThemes: { [name: string]: Theme } = {}
@@ -25,7 +25,7 @@ Object.entries(allThemes).forEach(([name, theme]) => createTheme(name, theme))
 le transformateur va remplir la variable `allThemes` afin que le fichier devienne :
 
 ```typescript
-// locales/index.ts
+// themes/index.ts
 import { Theme, createTheme } from '../Theme'
 
 const allThemes: { [name: string]: Theme } = {
@@ -61,6 +61,8 @@ Vous avez une application extensible dans laquelle vous pouvez ajouter des local
 - Vous pouvez écrire un outil qui crée le fichier d'index à la génération. Afin de ne pas l'oublier, vous devriez l'ajouter à votre procédure de génération. Mais vous allez devoir également fournir au moins un faux fichier d'aggrégation afin que _TypeScript_ puisse effectuer les contrôles de type, or pour les tests unitaires.
 
 En utilisant le transformateur, vous n'aurez pas besoin de faire cela. Écrivez simplement votre fichier d'aggrégation, qui contient une variable initialisée. Il est même possible d'y mettre une fausse initialisation, si vous en avez besoin pour des tests, elle sera remplacée par le transformateur. Une fois cela fait, vous pouvez ajouter vos fichiers d'extentions, et ils seront automatiquement ajoutés à la variable.
+
+Ce transformateur crée des `require`s et est donc conçu pour les modules CommonJS. Pour les modules ES, utilisez plutôt [ts-transform-auto-import](https://github.com/slune-org/ts-transform-auto-import).
 
 # Utilisation
 

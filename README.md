@@ -20,7 +20,7 @@ This transformer fills in a variable initializer in a file with the content of f
 and this file content:
 
 ```typescript
-// locales/index.ts
+// themes/index.ts
 import { Theme, createTheme } from '../Theme'
 
 const allThemes: { [name: string]: Theme } = {}
@@ -31,7 +31,7 @@ Object.entries(allThemes).forEach(([name, theme]) => createTheme(name, theme))
 the transformer will fill in the `allThemes` variable so the file will be:
 
 ```typescript
-// locales/index.ts
+// themes/index.ts
 import { Theme, createTheme } from '../Theme'
 
 const allThemes: { [name: string]: Theme } = {
@@ -69,6 +69,8 @@ You have an extensible application in which you can drop some locales, plugins, 
 - You may write a tool which creates the index file at build time. In order not to forget it, you should add it to your build process. But you will also need to provide at least a fake aggregation file in order for _TypeScript_ to be able to check types, or for the unit tests.
 
 Using the transformer, you will not need to do any of that. Simply write your aggregation file, which contains an initialized variable. You can even put fake initialization in there, if you need it for tests, it will be replaced by the transformer. Once this is done, you can add your extension files, and they will be automatically added to the variable.
+
+This transformer creates `require`s and is therefore designed for CommonJS modules. For ES modules, prefer [ts-transform-auto-import](https://github.com/slune-org/ts-transform-auto-import).
 
 # Usage
 
