@@ -35,10 +35,10 @@ the transformer will fill in the `allThemes` variable so the file will be:
 import { Theme, createTheme } from '../Theme'
 
 const allThemes: { [name: string]: Theme } = {
-  dark: require('./dark').default,
-  magic: require('./magic').default,
-  'partial/light': require('./partial/light').default,
-  'partial/stars': require('./partial/stars').default,
+  dark: require('tslib').__importDefault(require('./dark')).default,
+  magic: require('tslib').__importDefault(require('./magic')).default,
+  'partial/light': require('tslib').__importDefault(require('./partial/light')).default,
+  'partial/stars': require('tslib').__importDefault(require('./partial/stars')).default,
 }
 
 Object.entries(allThemes).forEach(([name, theme]) => createTheme(name, theme))

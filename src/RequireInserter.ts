@@ -138,6 +138,18 @@ export default class RequireInserter implements NodeVisitor<VariableDeclaration>
             createStringLiteral(fileDefinition.filePath),
           ])
           if (fileDefinition.sourceCode) {
+            const tslibRequireExpresssion = createCallExpression(createIdentifier('require'), undefined, [
+              createStringLiteral('tslib'),
+            ])
+            const importDefaultExpression = createPropertyAccessExpression(
+              tslibRequireExpresssion,
+              createIdentifier('__importDefault')
+            )
+
+            requireExpression = createCallExpression(importDefaultExpression, undefined, [
+              requireExpression,
+            ])
+
             requireExpression = createPropertyAccessExpression(
               requireExpression,
               createIdentifier('default')
